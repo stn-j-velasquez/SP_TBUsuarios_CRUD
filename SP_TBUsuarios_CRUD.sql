@@ -1,4 +1,5 @@
--- Si no existe, crear stub para poder ALTER sin errores
+
+     -- Si no existe, crear stub para poder ALTER sin errores
 IF OBJECT_ID('dbo.SP_TBUsuarios_CRUD', 'P') IS NULL
     EXEC ('CREATE PROCEDURE dbo.SP_TBUsuarios_CRUD AS BEGIN SET NOCOUNT ON; END');
 GO
@@ -60,6 +61,7 @@ BEGIN
     -- - IDUser: siguiente numérico → char(8) con ceros a la izquierda
     -- - Cod_Usu: primer hueco libre entre 0541 y 9999
     -- - Fechas: char(8) estilo 112 (yyyymmdd)
+    -- - Estado: 'A' (activo) al crearse
     ----------------------------------------------------------------------
     IF @opcion = 'I'
     BEGIN
@@ -149,7 +151,8 @@ BEGIN
                 FecCreacion,  -- char(8) yyyymmdd
                 FecIni,       -- char(8) yyyymmdd
                 FecFin,       -- char(8) yyyymmdd
-                [Password]    -- varchar(32)
+                [Password],   -- varchar(32)
+                Estado        -- char(1) -> 'A'
             )
             VALUES
             (
@@ -159,7 +162,8 @@ BEGIN
                 CONVERT(CHAR(8), @now, 112),
                 CONVERT(CHAR(8), @now, 112),
                 CONVERT(CHAR(8), @now, 112),
-                @Password
+                @Password,
+                'A'           -- Estado activo al crear
             );
 
             COMMIT TRAN;
@@ -274,6 +278,8 @@ BEGIN
 
     ----------------------------------------------------------------------
     -- SELECCIONAR (S)
+    -- - Sin @Cod_Usu → todos
+    -- - Con @Cod_Usu → uno (valida existencia)
     ----------------------------------------------------------------------
     IF @opcion = 'S'
     BEGIN
@@ -307,42 +313,26 @@ GO
 
 
 
-
--- INSERT
+-- INSERT (crea Estado='A')
 EXEC dbo.SP_TBUsuarios_CRUD
      @opcion = 'I',
-     @ApeNomUser = 'Prueba3',
-     @Password = '23DE45D10BA40432C4E38F01F15C17';
+     @ApeNomUser = 'Prueba4',
+     @Password  = '23DE45D10BA40432C4E38F01F15C17';
 
 -- SELECT TODOS
 EXEC dbo.SP_TBUsuarios_CRUD @opcion = 'S';
 
--- UPDATE (usa el Cod_Usu que te devolvió el INSERT, ej. '0001')
+-- SELECT UNO (por Cod_Usu)
+EXEC dbo.SP_TBUsuarios_CRUD @opcion = 'S', @Cod_Usu = '0543';
+
+-- UPDATE (solo ApeNomUser y Password) por Cod_Usu
 EXEC dbo.SP_TBUsuarios_CRUD
      @opcion = 'U',
      @Cod_Usu = '0543',
      @ApeNomUser = 'EDIT',
-     @Password = 'ABCDEF0123456789ABCDEF0123456789';
+     @Password   = 'ABCDEF0123456789ABCDEF0123456789';
 
--- DELETE
+-- DELETE (por Cod_Usu)
 EXEC dbo.SP_TBUsuarios_CRUD
      @opcion = 'D',
-     @Cod_Usu = '0001';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+     @Cod_Usu = '0543';
